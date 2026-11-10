@@ -214,7 +214,7 @@
       
       <div class="counters-wrapper">
         <div class="counter-box">
-          <div class="counter-val" id="globalCounter">0</div>
+          <div class="counter-val" id="globalCounter">...</div>
           <div class="counter-lbl">العداد الإجمالي العام</div>
         </div>
         <div class="counter-box">
@@ -248,6 +248,8 @@
     // تحميل التسبيحات الشخصية من الذاكرة المحلية للجهاز
     let personalCounts = JSON.parse(localStorage.getItem('tasbeeh_personal_counts')) || {};
 
+    let currentGlobalRef = null;
+
     function initTabs() {
       const tabsContainer = document.getElementById('dhikrTabs');
       dhikrs.forEach((d, i) => {
@@ -265,12 +267,20 @@
         t.classList.toggle('active', i === index);
       });
       document.getElementById('dhikrText').innerText = dhikrs[index].name;
+      
+      // إلغاء الاستماع القديم لو موجود لمنع التداخل
+      if (currentGlobalRef) {
+        currentGlobalRef.off();
+      }
+
       listenToGlobalCounter(dhikrs[index].id);
       updatePersonalDisplay();
     }
 
     function listenToGlobalCounter(dhikrId) {
-      db.ref('counters/' + dhikrId).on('value', (snapshot) => {
+      currentGlobalRef = db.ref('counters/' + dhikrId);
+      // استخدام once لجلب القيمة فوراً عند التحميل لمنع ظهور الصفر الوهمي
+      currentGlobalRef.on('value', (snapshot) => {
         const val = snapshot.val() || 0;
         document.getElementById('globalCounter').innerText = val.toLocaleString('ar-EG');
       });
@@ -279,10 +289,10 @@
     function doTasbeeh() {
       const dhikrId = dhikrs[currentDhikrIndex].id;
       
-      // زيادة العداد الإجمالي العام على فايربيس (ليسمع عند كل الناس)
+      // زيادة العداد الإجمالي العام على فايربيس
       db.ref('counters/' + dhikrId).transaction((curr) => (curr || 0) + 1);
       
-      // زيادة العداد الشخصي وحفظه محلياً على جهازك فقط
+      // زيادة العداد الشخصي وحفظه محلياً على جهازك
       personalCounts[dhikrId] = (personalCounts[dhikrId] || 0) + 1;
       localStorage.setItem('tasbeeh_personal_counts', JSON.stringify(personalCounts));
       
