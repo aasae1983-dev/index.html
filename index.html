@@ -10,9 +10,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Reem+Kufi:wght@500;700&family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
-  <!-- Lucide Icons -->
-  <script src="https://unpkg.com/lucide@latest"></script>
-
   <!-- Firebase App & Database -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
@@ -21,13 +18,10 @@
     :root {
       --bg-cream: #FDFBF7;
       --bg-card: #F4EFE6;
-      --bg-card-hover: #EBE4D5;
       --primary-green: #1B4D3E;
       --deep-green: #0F3328;
-      --light-green: #2C6B56;
       --accent-gold: #C59B27;
       --gold-light: #E5C365;
-      --gold-glow: rgba(197, 155, 39, 0.3);
       --text-main: #2A332E;
       --text-muted: #5C6B63;
       --border-color: #E2D9C8;
@@ -48,11 +42,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      background-image: 
-        radial-gradient(circle at 50% 0%, rgba(27, 77, 62, 0.05) 0%, transparent 70%),
-        radial-gradient(circle at 50% 100%, rgba(197, 155, 39, 0.05) 0%, transparent 70%);
       padding: 20px 16px 40px 16px;
-      overflow-x: hidden;
     }
 
     .container {
@@ -71,18 +61,7 @@
       border-radius: 24px;
       padding: 24px 20px;
       text-align: center;
-      box-shadow: 0 12px 30px rgba(15, 51, 40, 0.15);
       border: 1px solid var(--accent-gold);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .header-card::before {
-      content: "";
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: radial-gradient(circle at top right, rgba(229, 195, 101, 0.15), transparent 50%);
-      pointer-events: none;
     }
 
     .header-title {
@@ -117,7 +96,6 @@
       white-space: nowrap;
       cursor: pointer;
       color: var(--text-main);
-      transition: 0.2s;
     }
 
     .dhikr-tab.active {
@@ -133,7 +111,6 @@
       padding: 30px 20px;
       text-align: center;
       border: 1px solid var(--border-color);
-      box-shadow: 0 8px 20px rgba(0,0,0,0.03);
     }
 
     .dhikr-text {
@@ -154,7 +131,7 @@
 
     .counter-box {
       flex: 1;
-      background: rgba(255, 255, 255, 0.7);
+      background: rgba(255, 255, 255, 0.8);
       border: 1px solid var(--border-color);
       border-radius: 16px;
       padding: 12px;
@@ -174,7 +151,6 @@
 
     .tasbeeh-btn-wrapper {
       margin-top: 10px;
-      margin-bottom: 10px;
     }
 
     .tasbeeh-btn {
@@ -188,7 +164,6 @@
       font-weight: 800;
       cursor: pointer;
       box-shadow: 0 12px 25px rgba(27, 77, 62, 0.3);
-      transition: transform 0.1s ease;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -215,105 +190,3 @@
       <div class="counters-wrapper">
         <div class="counter-box">
           <div class="counter-val" id="globalCounter">0</div>
-          <div class="counter-lbl">العداد الإجمالي العام</div>
-        </div>
-        <div class="counter-box">
-          <div class="counter-val" id="personalCounter">0</div>
-          <div class="counter-lbl">تسبيحاتك الشخصية</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="tasbeeh-btn-wrapper">
-      <button class="tasbeeh-btn" id="tasbeehBtn" onclick="doTasbeeh()">اضغط هنا</button>
-    </div>
-  </div>
-
-  <script>
-    const firebaseConfig = {
-      databaseURL: "https://dhikr-global-counter-default-rtdb.firebaseio.com"
-    };
-    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const dhikrs = [
-      { id: 'astaghfirullah', name: 'أستغفر الله العظيم واتوب إليه' },
-      { id: 'subhanallah', name: 'سبحان الله وبحمده سبحان الله العظيم' },
-      { id: 'alhamdulillah', name: 'الحمد لله رب العالمين' },
-      { id: 'allahuakbar', name: 'الله أكبر' }
-    ];
-
-    let currentDhikrIndex = 0;
-    let personalCounts = JSON.parse(localStorage.getItem('tasbeeh_personal_counts')) || {};
-    let currentGlobalRef = null;
-
-    function initTabs() {
-      const tabsContainer = document.getElementById('dhikrTabs');
-      dhikrs.forEach((d, i) => {
-        const btn = document.createElement('button');
-        btn.className = `dhikr-tab ${i === 0 ? 'active' : ''}`;
-        btn.innerText = d.name.split(' ')[0] + '...';
-        btn.onclick = () => selectDhikr(i);
-        tabsContainer.appendChild(btn);
-      });
-    }
-
-    function selectDhikr(index) {
-      currentDhikrIndex = index;
-      document.querySelectorAll('.dhikr-tab').forEach((t, i) => {
-        t.classList.toggle('active', i === index);
-      });
-      document.getElementById('dhikrText').innerText = dhikrs[index].name;
-      
-      if (currentGlobalRef) {
-        currentGlobalRef.off();
-      }
-
-      listenToGlobalCounter(dhikrs[index].id);
-      updatePersonalDisplay();
-    }
-
-    function listenToGlobalCounter(dhikrId) {
-      currentGlobalRef = db.ref('counters/' + dhikrId);
-      // استخدام once لجلب القيمة الحقيقية فوراً عند التحميل لمنع التصفير، ثم المتابعة بـ on
-      currentGlobalRef.once('value').then((snapshot) => {
-        const val = snapshot.val();
-        document.getElementById('globalCounter').innerText = (val !== null ? val : 0).toLocaleString('ar-EG');
-      });
-
-      currentGlobalRef.on('value', (snapshot) => {
-        const val = snapshot.val();
-        document.getElementById('globalCounter').innerText = (val !== null ? val : 0).toLocaleString('ar-EG');
-      });
-    }
-
-    function doTasbeeh() {
-      const dhikrId = dhikrs[currentDhikrIndex].id;
-      
-      // تحديث العداد العام على فايربيس (إضافة الجديد على القديم لكل المستخدمين)
-      db.ref('counters/' + dhikrId).transaction((currentValue) => {
-        return (currentValue || 0) + 1;
-      });
-      
-      // تحديث العداد الشخصي وحفظه محلياً
-      personalCounts[dhikrId] = (personalCounts[dhikrId] || 0) + 1;
-      localStorage.setItem('tasbeeh_personal_counts', JSON.stringify(personalCounts));
-      
-      updatePersonalDisplay();
-
-      if (navigator.vibrate) navigator.vibrate(40);
-    }
-
-    function updatePersonalDisplay() {
-      const dhikrId = dhikrs[currentDhikrIndex].id;
-      const val = personalCounts[dhikrId] || 0;
-      document.getElementById('personalCounter').innerText = val.toLocaleString('ar-EG');
-    }
-
-    window.onload = () => {
-      initTabs();
-      selectDhikr(0);
-    };
-  </script>
-</body>
-</html>
