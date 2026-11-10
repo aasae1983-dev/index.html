@@ -245,7 +245,7 @@
 
     let currentDhikrIndex = 0;
     
-    // استرجاع التسبيحات الشخصية المحفوظة محلياً
+    // تحميل التسبيحات الشخصية من الذاكرة المحلية للجهاز
     let personalCounts = JSON.parse(localStorage.getItem('tasbeeh_personal_counts')) || {};
 
     function initTabs() {
@@ -279,10 +279,10 @@
     function doTasbeeh() {
       const dhikrId = dhikrs[currentDhikrIndex].id;
       
-      // زيادة العداد العام على فايربيس
+      // زيادة العداد الإجمالي العام على فايربيس (ليسمع عند كل الناس)
       db.ref('counters/' + dhikrId).transaction((curr) => (curr || 0) + 1);
       
-      // زيادة وتحديث العداد الشخصي وحفظه محلياً
+      // زيادة العداد الشخصي وحفظه محلياً على جهازك فقط
       personalCounts[dhikrId] = (personalCounts[dhikrId] || 0) + 1;
       localStorage.setItem('tasbeeh_personal_counts', JSON.stringify(personalCounts));
       
