@@ -214,7 +214,7 @@
       
       <div class="counters-wrapper">
         <div class="counter-box">
-          <div class="counter-val" id="globalCounter">...</div>
+          <div class="counter-val" id="globalCounter">جاري التحميل...</div>
           <div class="counter-lbl">العداد الإجمالي العام</div>
         </div>
         <div class="counter-box">
@@ -247,7 +247,6 @@
     
     // تحميل التسبيحات الشخصية من الذاكرة المحلية للجهاز
     let personalCounts = JSON.parse(localStorage.getItem('tasbeeh_personal_counts')) || {};
-
     let currentGlobalRef = null;
 
     function initTabs() {
@@ -268,7 +267,7 @@
       });
       document.getElementById('dhikrText').innerText = dhikrs[index].name;
       
-      // إلغاء الاستماع القديم لو موجود لمنع التداخل
+      // إلغاء الاتصال القديم لمنع تداخل القراءات
       if (currentGlobalRef) {
         currentGlobalRef.off();
       }
@@ -279,21 +278,28 @@
 
     function listenToGlobalCounter(dhikrId) {
       currentGlobalRef = db.ref('counters/' + dhikrId);
-      // استخدام once لجلب القيمة فوراً عند التحميل لمنع ظهور الصفر الوهمي
+      
+      // استخدام on("value") مع التحقق الكامل لضمان جلب الرقم القديم والجديد الخاص بكل المستخدمين وعدم تصفيره نهائياً
       currentGlobalRef.on('value', (snapshot) => {
-        const val = snapshot.val() || 0;
-        document.getElementById('globalCounter').innerText = val.toLocaleString('ar-EG');
+        const val = snapshot.val();
+        const total = (val !== null && !isNaN(val)) ? val : 0;
+        document.getElementById('globalCounter').innerText = total.toLocaleString('ar-EG');
+      }, (error) => {
+        console.error("Firebase error:", error);
       });
     }
 
     function doTasbeeh() {
       const dhikrId = dhikrs[currentDhikrIndex].id;
       
-      // زيادة العداد الإجمالي العام على فايربيس
-      db.ref('counters/' + dhikrId).transaction((curr) => (curr || 0) + 1);
+      // زيادة العداد الإجمالي العام على فايربيس (يضيف على القديم ويحفظه لكل المستخدمين)
+      const counterRef = db.ref('counters/' + dhikrId);
+      counterRef.transaction((currentValue) => {
+        return (currentValue || 0) + 1;
+      });
       
-      // زيادة العداد الشخصي وحفظه محلياً على جهازك
-      personalCounts[dhikrId] = (personalCounts[dhikrId] || 0) + 1;
+      // زيادة العداد الشخصي وحفظه محلياً على جهازك أنت فقط
+      personalCounts[dhikrId] = (personalCounts[dhiklId] || personalCounts[dhikrId] || 0) + 1;
       localStorage.setItem('tasbeeh_personal_counts', JSON.stringify(personalCounts));
       
       updatePersonalDisplay();
