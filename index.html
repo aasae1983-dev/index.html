@@ -214,7 +214,7 @@
       
       <div class="counters-wrapper">
         <div class="counter-box">
-          <div class="counter-val" id="globalCounter">جاري التحميل...</div>
+          <div class="counter-val" id="globalCounter">0</div>
           <div class="counter-lbl">العداد الإجمالي العام</div>
         </div>
         <div class="counter-box">
@@ -244,8 +244,6 @@
     ];
 
     let currentDhikrIndex = 0;
-    
-    // تحميل التسبيحات الشخصية من الذاكرة المحلية للجهاز
     let personalCounts = JSON.parse(localStorage.getItem('tasbeeh_personal_counts')) || {};
     let currentGlobalRef = null;
 
@@ -267,7 +265,6 @@
       });
       document.getElementById('dhikrText').innerText = dhikrs[index].name;
       
-      // إلغاء الاتصال القديم لمنع تداخل القراءات
       if (currentGlobalRef) {
         currentGlobalRef.off();
       }
@@ -278,28 +275,28 @@
 
     function listenToGlobalCounter(dhikrId) {
       currentGlobalRef = db.ref('counters/' + dhikrId);
-      
-      // استخدام on("value") مع التحقق الكامل لضمان جلب الرقم القديم والجديد الخاص بكل المستخدمين وعدم تصفيره نهائياً
+      // استخدام once لجلب القيمة الحقيقية فوراً عند التحميل لمنع التصفير، ثم المتابعة بـ on
+      currentGlobalRef.once('value').then((snapshot) => {
+        const val = snapshot.val();
+        document.getElementById('globalCounter').innerText = (val !== null ? val : 0).toLocaleString('ar-EG');
+      });
+
       currentGlobalRef.on('value', (snapshot) => {
         const val = snapshot.val();
-        const total = (val !== null && !isNaN(val)) ? val : 0;
-        document.getElementById('globalCounter').innerText = total.toLocaleString('ar-EG');
-      }, (error) => {
-        console.error("Firebase error:", error);
+        document.getElementById('globalCounter').innerText = (val !== null ? val : 0).toLocaleString('ar-EG');
       });
     }
 
     function doTasbeeh() {
       const dhikrId = dhikrs[currentDhikrIndex].id;
       
-      // زيادة العداد الإجمالي العام على فايربيس (يضيف على القديم ويحفظه لكل المستخدمين)
-      const counterRef = db.ref('counters/' + dhikrId);
-      counterRef.transaction((currentValue) => {
+      // تحديث العداد العام على فايربيس (إضافة الجديد على القديم لكل المستخدمين)
+      db.ref('counters/' + dhikrId).transaction((currentValue) => {
         return (currentValue || 0) + 1;
       });
       
-      // زيادة العداد الشخصي وحفظه محلياً على جهازك أنت فقط
-      personalCounts[dhikrId] = (personalCounts[dhiklId] || personalCounts[dhikrId] || 0) + 1;
+      // تحديث العداد الشخصي وحفظه محلياً
+      personalCounts[dhikrId] = (personalCounts[dhikrId] || 0) + 1;
       localStorage.setItem('tasbeeh_personal_counts', JSON.stringify(personalCounts));
       
       updatePersonalDisplay();
