@@ -219,7 +219,7 @@
         </div>
         <div class="counter-box">
           <div class="counter-val" id="personalCounter">0</div>
-          <div class="counter-lbl">تسبيحاتك اليوم</div>
+          <div class="counter-lbl">تسبيحاتك الشخصية</div>
         </div>
       </div>
     </div>
@@ -244,7 +244,9 @@
     ];
 
     let currentDhikrIndex = 0;
-    let personalCounts = {};
+    
+    // استرجاع التسبيحات الشخصية المحفوظة محلياً
+    let personalCounts = JSON.parse(localStorage.getItem('tasbeeh_personal_counts')) || {};
 
     function initTabs() {
       const tabsContainer = document.getElementById('dhikrTabs');
@@ -276,9 +278,14 @@
 
     function doTasbeeh() {
       const dhikrId = dhikrs[currentDhikrIndex].id;
+      
+      // زيادة العداد العام على فايربيس
       db.ref('counters/' + dhikrId).transaction((curr) => (curr || 0) + 1);
       
+      // زيادة وتحديث العداد الشخصي وحفظه محلياً
       personalCounts[dhikrId] = (personalCounts[dhikrId] || 0) + 1;
+      localStorage.setItem('tasbeeh_personal_counts', JSON.stringify(personalCounts));
+      
       updatePersonalDisplay();
 
       if (navigator.vibrate) navigator.vibrate(40);
